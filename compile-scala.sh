@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 if [ ! -f src/main/scala/Runner.java ]
 then
     echo Unable to find src/main/scala/Runner.java > compilation.log
@@ -17,5 +18,5 @@ then
     exit 1
 fi
 
-jar cf "./java-cgdk.jar" -C "./classes" .
+jar cf "./scala-cgdk.jar" -C "./classes" .
 cp -n $SCALA_HOME/lib/scala-library.jar $SCALA_HOME/lib/scala-reflect.jar .

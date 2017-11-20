@@ -27,6 +27,6 @@ if not exist classes\MyStrategy.class (
     exit 1
 )
 
-jar cvfe "./java-cgdk.jar" Runner -C "./classes" .
+jar cvfe "./scala-cgdk.jar" Runner -C "./classes" .
 copy /Y /B "%SCALA_HOME%\lib\scala-library.jar" .
 copy /Y /B "%SCALA_HOME%\lib\scala-reflect.jar" .

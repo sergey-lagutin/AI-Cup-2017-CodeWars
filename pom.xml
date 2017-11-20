@@ -14,7 +14,7 @@
     </properties>
 
     <build>
-        <finalName>java-cgdk</finalName>
+        <finalName>scala-cgdk</finalName>
 
         <plugins>
             <plugin>
