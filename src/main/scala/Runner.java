@@ -26,7 +26,7 @@ public final class Runner {
             remoteProcessClient.readTeamSizeMessage();
             Game game = remoteProcessClient.readGameContextMessage();
 
-            Strategy strategy = new MyStrategy_v1();
+            Strategy strategy = new MyStrategy();
 
             PlayerContext playerContext;
 
