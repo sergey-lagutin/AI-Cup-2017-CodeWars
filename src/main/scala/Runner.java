@@ -1,4 +1,7 @@
-import model.*;
+import model.Game;
+import model.Move;
+import model.Player;
+import model.PlayerContext;
 
 import java.io.IOException;
 
@@ -23,7 +26,7 @@ public final class Runner {
             remoteProcessClient.readTeamSizeMessage();
             Game game = remoteProcessClient.readGameContextMessage();
 
-            Strategy strategy = new MyStrategy();
+            Strategy strategy = new MyStrategy_v1();
 
             PlayerContext playerContext;
 

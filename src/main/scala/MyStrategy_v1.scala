@@ -1,6 +1,6 @@
 import model._
 
-class MyStrategy extends Strategy {
+class MyStrategy_v1 extends Strategy {
   def move(me: Player, world: World, game: Game, move: Move) {
     if (world.getTickIndex == 0) {
       move.setAction(ActionType.CLEAR_AND_SELECT)
