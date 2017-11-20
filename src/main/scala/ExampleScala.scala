@@ -144,6 +144,7 @@ final class ExampleScala extends Strategy {
 
               foo(move)
             })
+          case _ =>
         }
       }
       // Также находим центр формации наших БРЭМ ...
@@ -171,6 +172,7 @@ final class ExampleScala extends Strategy {
 
             foo(move)
           })
+        case _ =>
       }
       return
     }
@@ -202,15 +204,14 @@ final class ExampleScala extends Strategy {
 
             foo(move)
           })
+        case _ =>
       }
     }
   }
 
   import ExampleScala.Ownership._
 
-  private def streamVehicles(ownership: Ownership) = streamVehicles(ownership, null)
-
-  private def streamVehicles(ownership: Ownership, vehicleType: VehicleType): Seq[Vehicle] = {
+  private def streamVehicles(ownership: Ownership, vehicleType: VehicleType = null): Seq[Vehicle] = {
     val vehicles = vehicleById.values.filter { v =>
       ownership match {
         case ALLY =>
