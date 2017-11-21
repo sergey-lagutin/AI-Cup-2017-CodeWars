@@ -125,25 +125,17 @@ final class MyStrategy extends Strategy {
         // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
         (xOpt, yOpt) match {
           case (Some(x), Some(y)) =>
-            delayedMoves.add((move: Move) => {
-              def foo(move: Move) {
-                move.setAction(ActionType.CLEAR_AND_SELECT)
-                move.setRight(world.getWidth)
-                move.setBottom(world.getHeight)
-                move.setVehicleType(vehicleType)
-              }
-
-              foo(move)
-            })
-            delayedMoves.add((move: Move) => {
-              def foo(move: Move) {
-                move.setAction(ActionType.MOVE)
-                move.setX(targetX - x)
-                move.setY(targetY - y)
-              }
-
-              foo(move)
-            })
+            delayedMoves.add { move =>
+              move.setAction(ActionType.CLEAR_AND_SELECT)
+              move.setRight(world.getWidth)
+              move.setBottom(world.getHeight)
+              move.setVehicleType(vehicleType)
+            }
+            delayedMoves.add { move =>
+              move.setAction(ActionType.MOVE)
+              move.setX(targetX - x)
+              move.setY(targetY - y)
+            }
           case _ =>
         }
       }
@@ -153,25 +145,17 @@ final class MyStrategy extends Strategy {
       // .. и отправляем их в центр мира.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add((move: Move) => {
-            def foo(move: Move): Unit = {
-              move.setAction(ActionType.CLEAR_AND_SELECT)
-              move.setRight(world.getWidth)
-              move.setBottom(world.getHeight)
-              move.setVehicleType(VehicleType.ARRV)
-            }
-
-            foo(move)
-          })
-          delayedMoves.add((move: Move) => {
-            def foo(move: Move): Unit = {
-              move.setAction(ActionType.MOVE)
-              move.setX(world.getWidth / 2.0D - x)
-              move.setY(world.getHeight / 2.0D - y)
-            }
-
-            foo(move)
-          })
+          delayedMoves.add { move =>
+            move.setAction(ActionType.CLEAR_AND_SELECT)
+            move.setRight(world.getWidth)
+            move.setBottom(world.getHeight)
+            move.setVehicleType(VehicleType.ARRV)
+          }
+          delayedMoves.add { move =>
+            move.setAction(ActionType.MOVE)
+            move.setX(world.getWidth / 2.0D - x)
+            move.setY(world.getHeight / 2.0D - y)
+          }
         case _ =>
       }
       return
@@ -184,26 +168,17 @@ final class MyStrategy extends Strategy {
       // ... и поворачиваем её на случайный угол.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add((move: Move) => {
-            def foo(move: Move): Unit = {
-              move.setAction(ActionType.CLEAR_AND_SELECT)
-              move.setRight(world.getWidth)
-              move.setBottom(world.getHeight)
-            }
-
-            foo(move)
-          })
-          delayedMoves.add((move: Move) => {
-            def foo(move: Move): Unit = {
-              move.setAction(ActionType.ROTATE)
-              move.setX(x)
-              move.setY(y)
-              move.setAngle(if (random.nextBoolean) StrictMath.PI
-              else -StrictMath.PI)
-            }
-
-            foo(move)
-          })
+          delayedMoves.add { move =>
+            move.setAction(ActionType.CLEAR_AND_SELECT)
+            move.setRight(world.getWidth)
+            move.setBottom(world.getHeight)
+          }
+          delayedMoves.add { move =>
+            move.setAction(ActionType.ROTATE)
+            move.setX(x)
+            move.setY(y)
+            move.setAngle(if (random.nextBoolean) StrictMath.PI else -StrictMath.PI)
+          }
         case _ =>
       }
     }
