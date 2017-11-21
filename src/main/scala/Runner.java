@@ -6,27 +6,23 @@ import model.PlayerContext;
 import java.io.IOException;
 
 public final class Runner {
+    private static final String HOST = "127.0.0.1";
     private final RemoteProcessClient remoteProcessClient;
-    private final String token;
+    private final String token = "0000000000000000";
+    private final Strategy strategy;
 
-    public static void main(String[] args) throws IOException {
-        new Runner(args.length == 3 ? args : new String[] {"127.0.0.1", "31001", "0000000000000000"}).run();
-    }
-
-    private Runner(String[] args) throws IOException {
-        remoteProcessClient = new RemoteProcessClient(args[0], Integer.parseInt(args[1]));
-        token = args[2];
+    public Runner(Strategy strategy, int port) throws IOException {
+        remoteProcessClient = new RemoteProcessClient(HOST, port);
+        this.strategy = strategy;
     }
 
     @SuppressWarnings("WeakerAccess")
-    public void run() throws IOException {
+    void run() throws IOException {
         try {
             remoteProcessClient.writeTokenMessage(token);
             remoteProcessClient.writeProtocolVersionMessage();
             remoteProcessClient.readTeamSizeMessage();
             Game game = remoteProcessClient.readGameContextMessage();
-
-            Strategy strategy = new MyStrategy();
 
             PlayerContext playerContext;
 
