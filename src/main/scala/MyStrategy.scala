@@ -182,9 +182,9 @@ object MyStrategy {
     */
   private val preferredTargetTypesByVehicleType = Map[VehicleType, List[VehicleType]](
     VehicleType.FIGHTER -> List(VehicleType.HELICOPTER, VehicleType.FIGHTER),
-    VehicleType.HELICOPTER -> List(VehicleType.TANK, VehicleType.ARRV, VehicleType.HELICOPTER, VehicleType.IFV, VehicleType.FIGHTER),
-    VehicleType.IFV -> List(VehicleType.HELICOPTER, VehicleType.ARRV, VehicleType.IFV, VehicleType.FIGHTER, VehicleType.TANK),
-    VehicleType.TANK -> List(VehicleType.IFV, VehicleType.ARRV, VehicleType.TANK, VehicleType.FIGHTER, VehicleType.HELICOPTER)
+    VehicleType.HELICOPTER -> List(VehicleType.TANK, VehicleType.HELICOPTER, VehicleType.IFV, VehicleType.FIGHTER, VehicleType.ARRV),
+    VehicleType.IFV -> List(VehicleType.HELICOPTER, VehicleType.IFV, VehicleType.FIGHTER, VehicleType.TANK, VehicleType.ARRV),
+    VehicleType.TANK -> List(VehicleType.IFV, VehicleType.TANK, VehicleType.FIGHTER, VehicleType.HELICOPTER, VehicleType.ARRV)
   )
 
   object Ownership extends Enumeration {
