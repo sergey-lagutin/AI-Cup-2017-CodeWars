@@ -1,8 +1,7 @@
 import java.util
 import java.util.Random
-import java.util.function.Consumer
 
-import model.{ActionType, Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
+import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
 
 import scala.collection.convert.ImplicitConversionsToScala._
 import scala.language.implicitConversions
@@ -11,7 +10,7 @@ final class MyStrategy extends Strategy {
 
   final private val vehicleById = new util.HashMap[Long, Vehicle]
   final private val updateTickByVehicleId = new util.HashMap[Long, Integer]
-  final private val delayedMoves = new util.ArrayDeque[Consumer[Move]]
+  final private val delayedMoves = new util.ArrayDeque[Action]
   private var random: Random = _
   private var terrainTypeByCellXY: Array[Array[TerrainType]] = _
   private var weatherTypeByCellXY: Array[Array[WeatherType]] = _
@@ -88,7 +87,7 @@ final class MyStrategy extends Strategy {
       false
     }
     else {
-      delayedMove.accept(move)
+      delayedMove.action(move)
       true
     }
   }
@@ -125,17 +124,8 @@ final class MyStrategy extends Strategy {
         // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
         (xOpt, yOpt) match {
           case (Some(x), Some(y)) =>
-            delayedMoves.add { move =>
-              move.setAction(ActionType.CLEAR_AND_SELECT)
-              move.setRight(world.getWidth)
-              move.setBottom(world.getHeight)
-              move.setVehicleType(vehicleType)
-            }
-            delayedMoves.add { move =>
-              move.setAction(ActionType.MOVE)
-              move.setX(targetX - x)
-              move.setY(targetY - y)
-            }
+            delayedMoves.add(Select(world.getWidth, world.getHeight, vehicleType))
+            delayedMoves.add(GoTo(targetX - x, targetY - y))
           case _ =>
         }
       }
@@ -145,17 +135,8 @@ final class MyStrategy extends Strategy {
       // .. и отправляем их в центр мира.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add { move =>
-            move.setAction(ActionType.CLEAR_AND_SELECT)
-            move.setRight(world.getWidth)
-            move.setBottom(world.getHeight)
-            move.setVehicleType(VehicleType.ARRV)
-          }
-          delayedMoves.add { move =>
-            move.setAction(ActionType.MOVE)
-            move.setX(world.getWidth / 2.0D - x)
-            move.setY(world.getHeight / 2.0D - y)
-          }
+          delayedMoves.add(Select(world.getWidth, world.getHeight, VehicleType.ARRV))
+          delayedMoves.add(GoTo(world.getWidth / 2.0D - x, world.getHeight / 2.0D - y))
         case _ =>
       }
       return
@@ -168,17 +149,8 @@ final class MyStrategy extends Strategy {
       // ... и поворачиваем её на случайный угол.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add { move =>
-            move.setAction(ActionType.CLEAR_AND_SELECT)
-            move.setRight(world.getWidth)
-            move.setBottom(world.getHeight)
-          }
-          delayedMoves.add { move =>
-            move.setAction(ActionType.ROTATE)
-            move.setX(x)
-            move.setY(y)
-            move.setAngle(if (random.nextBoolean) StrictMath.PI else -StrictMath.PI)
-          }
+          delayedMoves.add(Select(world.getWidth, world.getHeight))
+          delayedMoves.add(Rotate(x, y, if (random.nextBoolean) StrictMath.PI else -StrictMath.PI))
         case _ =>
       }
     }
