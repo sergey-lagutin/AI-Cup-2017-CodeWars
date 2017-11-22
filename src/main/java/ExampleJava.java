@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
-public final class Example implements Strategy {
+public final class ExampleJava implements Strategy {
     /**
      * Список целей для каждого типа техники, упорядоченных по убыванию урона по ним.
      */

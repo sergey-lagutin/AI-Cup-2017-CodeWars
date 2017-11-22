@@ -1,4 +1,7 @@
-import model.*;
+import model.Game;
+import model.Move;
+import model.Player;
+import model.World;
 
 /**
  * Стратегия --- интерфейс, содержащий описание методов искусственного интеллекта армии.
