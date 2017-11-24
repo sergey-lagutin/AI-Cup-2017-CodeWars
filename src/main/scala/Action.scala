@@ -1,12 +1,15 @@
+import model.ActionType.TACTICAL_NUCLEAR_STRIKE
 import model.{ActionType, Move, VehicleType}
 
 sealed trait Action {
   def action(move: Move): Unit
 }
 
-case class Select(right: Double, bottom: Double, vehicleType: VehicleType = null) extends Action {
+case class Select(left: Double, top: Double, right: Double, bottom: Double, vehicleType: VehicleType = null) extends Action {
   override def action(move: Move): Unit = {
     move.setAction(ActionType.CLEAR_AND_SELECT)
+    move.setLeft(left)
+    move.setTop(top)
     move.setRight(right)
     move.setBottom(bottom)
     move.setVehicleType(vehicleType)
@@ -27,5 +30,14 @@ case class Rotate(x: Double, y: Double, angle: Double) extends Action {
     move.setX(x)
     move.setY(y)
     move.setAngle(angle)
+  }
+}
+
+case class NuclearStrike(x: Double, y: Double, vehicleId: Long) extends Action {
+  override def action(move: Move): Unit = {
+    move.setAction(TACTICAL_NUCLEAR_STRIKE)
+    move.setX(x)
+    move.setY(y)
+    move.setVehicleId(vehicleId)
   }
 }

@@ -1,6 +1,7 @@
 import java.util
 import java.util.Random
 
+import model.VehicleType.FIGHTER
 import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
 
 import scala.collection.convert.ImplicitConversionsToScala._
@@ -101,7 +102,28 @@ final class MyStrategy extends Strategy {
   /**
     * Основная логика нашей стратегии.
     */
-  private def makeMove(): Unit = { // Каждые 180 тиков ...
+  private def makeMove(): Unit = {
+    val myFighters = streamVehicles(MyStrategy.Ownership.ALLY, FIGHTER)
+    if (myFighters.nonEmpty) {
+      val centers = VehicleType.values()
+        .flatMap { v =>
+          val vehicles = streamVehicles(MyStrategy.Ownership.ENEMY, v)
+          val xOpt = vehicles.map(_.getX).average
+          val yOpt = vehicles.map(_.getY).average
+          xOpt.flatMap(x => yOpt.map(y => (x, y)))
+        }
+      val spotter = myFighters.minBy(f => centers.minBy(p => f.getDistanceTo(p._1, p._2)))
+      val target = centers.minBy(p => spotter.getDistanceTo(p._1, p._2))
+
+      val spotDistance = 80
+      if (spotter.getDistanceTo(target._1, target._2) > spotDistance) {
+        delayedMoves.add(selectOneUnit(spotter))
+        delayedMoves.add(GoTo(target._1 - spotter.getX, target._2 - spotter.getY))
+      }
+      else if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0)
+        delayedMoves.add(NuclearStrike(target._1, target._2, spotter.getId))
+    }
+    // Каждые 180 тиков ...
     if (world.getTickIndex % 180 == 0) { // ... для каждого типа техники ...
       for {
         vehicleType <- VehicleType.values
@@ -124,7 +146,7 @@ final class MyStrategy extends Strategy {
         // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
         (xOpt, yOpt) match {
           case (Some(x), Some(y)) =>
-            delayedMoves.add(Select(world.getWidth, world.getHeight, vehicleType))
+            delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight, vehicleType))
             delayedMoves.add(GoTo(targetX - x, targetY - y))
           case _ =>
         }
@@ -135,7 +157,7 @@ final class MyStrategy extends Strategy {
       // .. и отправляем их в центр мира.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add(Select(world.getWidth, world.getHeight, VehicleType.ARRV))
+          delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight, VehicleType.ARRV))
           delayedMoves.add(GoTo(world.getWidth / 2.0D - x, world.getHeight / 2.0D - y))
         case _ =>
       }
@@ -149,12 +171,15 @@ final class MyStrategy extends Strategy {
       // ... и поворачиваем её на случайный угол.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add(Select(world.getWidth, world.getHeight))
+          delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight))
           delayedMoves.add(Rotate(x, y, if (random.nextBoolean) StrictMath.PI else -StrictMath.PI))
         case _ =>
       }
     }
   }
+
+  private def selectOneUnit(unit: Vehicle): Action =
+    Select(unit.getX - 3, unit.getY - 3, unit.getX + 3, unit.getY + 3, unit.getType)
 
   import MyStrategy.Ownership._
 

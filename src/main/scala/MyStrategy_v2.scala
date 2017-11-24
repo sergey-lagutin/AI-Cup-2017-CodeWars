@@ -124,7 +124,7 @@ final class MyStrategy_v2 extends Strategy {
         // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
         (xOpt, yOpt) match {
           case (Some(x), Some(y)) =>
-            delayedMoves.add(Select(world.getWidth, world.getHeight, vehicleType))
+            delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight, vehicleType))
             delayedMoves.add(GoTo(targetX - x, targetY - y))
           case _ =>
         }
@@ -135,7 +135,7 @@ final class MyStrategy_v2 extends Strategy {
       // .. и отправляем их в центр мира.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add(Select(world.getWidth, world.getHeight, VehicleType.ARRV))
+          delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight, VehicleType.ARRV))
           delayedMoves.add(GoTo(world.getWidth / 2.0D - x, world.getHeight / 2.0D - y))
         case _ =>
       }
@@ -149,7 +149,7 @@ final class MyStrategy_v2 extends Strategy {
       // ... и поворачиваем её на случайный угол.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
-          delayedMoves.add(Select(world.getWidth, world.getHeight))
+          delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight))
           delayedMoves.add(Rotate(x, y, if (random.nextBoolean) StrictMath.PI else -StrictMath.PI))
         case _ =>
       }
