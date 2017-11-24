@@ -112,6 +112,10 @@ final class MyStrategy extends Strategy {
           val yOpt = vehicles.map(_.getY).average
           xOpt.flatMap(x => yOpt.map(y => (x, y)))
         }
+
+      if (centers.isEmpty)
+        return
+
       val spotter = myFighters.minBy(f => centers.minBy(p => f.getDistanceTo(p._1, p._2)))
       val target = centers.minBy(p => spotter.getDistanceTo(p._1, p._2))
 
