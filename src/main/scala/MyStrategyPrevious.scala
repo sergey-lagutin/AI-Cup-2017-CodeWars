@@ -7,7 +7,7 @@ import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType
 import scala.collection.convert.ImplicitConversionsToScala._
 import scala.language.implicitConversions
 
-final class MyStrategy_v3 extends Strategy {
+final class MyStrategyPrevious extends Strategy {
 
   final private val vehicleById = new util.HashMap[Long, Vehicle]
   final private val updateTickByVehicleId = new util.HashMap[Long, Integer]
