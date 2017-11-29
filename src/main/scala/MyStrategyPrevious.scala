@@ -103,11 +103,11 @@ final class MyStrategyPrevious extends Strategy {
     * Основная логика нашей стратегии.
     */
   private def makeMove(): Unit = {
-    val myFighters = streamVehicles(MyStrategy.Ownership.ALLY, FIGHTER)
+    val myFighters = streamVehicles(MyStrategyPrevious.Ownership.ALLY, FIGHTER)
     if (myFighters.nonEmpty) {
       val centers = VehicleType.values()
         .flatMap { v =>
-          val vehicles = streamVehicles(MyStrategy.Ownership.ENEMY, v)
+          val vehicles = streamVehicles(MyStrategyPrevious.Ownership.ENEMY, v)
           val xOpt = vehicles.map(_.getX).average
           val yOpt = vehicles.map(_.getY).average
           xOpt.flatMap(x => yOpt.map(y => (x, y)))
@@ -136,17 +136,17 @@ final class MyStrategyPrevious extends Strategy {
         if targetTypes.nonEmpty
       } {
         // ... получаем центр формации ...
-        val xOpt = streamVehicles(MyStrategy.Ownership.ALLY, vehicleType).map(_.getX).average
-        val yOpt = streamVehicles(MyStrategy.Ownership.ALLY, vehicleType).map(_.getY).average
+        val xOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, vehicleType).map(_.getX).average
+        val yOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, vehicleType).map(_.getY).average
         // ... получаем центр формации противника или центр мира ...
         val targetX = targetTypes
-          .flatMap(targetType => streamVehicles(MyStrategy.Ownership.ENEMY, targetType).map(_.getX).average)
+          .flatMap(targetType => streamVehicles(MyStrategyPrevious.Ownership.ENEMY, targetType).map(_.getX).average)
           .headOption
-          .getOrElse(streamVehicles(MyStrategy.Ownership.ENEMY).map(_.getX).average.getOrElse(world.getWidth / 2.0D))
+          .getOrElse(streamVehicles(MyStrategyPrevious.Ownership.ENEMY).map(_.getX).average.getOrElse(world.getWidth / 2.0D))
         val targetY = targetTypes
-          .flatMap(targetType => streamVehicles(MyStrategy.Ownership.ENEMY, targetType).map(_.getY).average)
+          .flatMap(targetType => streamVehicles(MyStrategyPrevious.Ownership.ENEMY, targetType).map(_.getY).average)
           .headOption
-          .getOrElse(streamVehicles(MyStrategy.Ownership.ENEMY).map(_.getY).average.getOrElse(world.getHeight / 2.0D))
+          .getOrElse(streamVehicles(MyStrategyPrevious.Ownership.ENEMY).map(_.getY).average.getOrElse(world.getHeight / 2.0D))
         // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
         (xOpt, yOpt) match {
           case (Some(x), Some(y)) =>
@@ -156,8 +156,8 @@ final class MyStrategyPrevious extends Strategy {
         }
       }
       // Также находим центр формации наших БРЭМ ...
-      val xOpt = streamVehicles(MyStrategy.Ownership.ALLY, VehicleType.ARRV).map(_.getX).average
-      val yOpt = streamVehicles(MyStrategy.Ownership.ALLY, VehicleType.ARRV).map(_.getY).average
+      val xOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, VehicleType.ARRV).map(_.getX).average
+      val yOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, VehicleType.ARRV).map(_.getY).average
       // .. и отправляем их в центр мира.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
@@ -169,9 +169,9 @@ final class MyStrategyPrevious extends Strategy {
     }
 
     // Если ни один наш юнит не мог двигаться в течение 60 тиков ...
-    if (streamVehicles(MyStrategy.Ownership.ALLY).forall(vehicle => world.getTickIndex - updateTickByVehicleId.get(vehicle.getId) > 60)) { // ... находим центр нашей формации ...
-      val xOpt = streamVehicles(MyStrategy.Ownership.ALLY).map(_.getX).average
-      val yOpt = streamVehicles(MyStrategy.Ownership.ALLY).map(_.getY).average
+    if (streamVehicles(MyStrategyPrevious.Ownership.ALLY).forall(vehicle => world.getTickIndex - updateTickByVehicleId.get(vehicle.getId) > 60)) { // ... находим центр нашей формации ...
+      val xOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY).map(_.getX).average
+      val yOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY).map(_.getY).average
       // ... и поворачиваем её на случайный угол.
       (xOpt, yOpt) match {
         case (Some(x), Some(y)) =>
@@ -185,7 +185,7 @@ final class MyStrategyPrevious extends Strategy {
   private def selectOneUnit(unit: Vehicle): Action =
     Select(unit.getX - 3, unit.getY - 3, unit.getX + 3, unit.getY + 3, unit.getType)
 
-  import MyStrategy.Ownership._
+  import MyStrategyPrevious.Ownership._
 
   private def streamVehicles(ownership: Ownership, vehicleType: VehicleType = null): Seq[Vehicle] = {
     val vehicles = vehicleById.values.filter { v =>
