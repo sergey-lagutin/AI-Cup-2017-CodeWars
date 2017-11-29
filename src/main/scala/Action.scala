@@ -1,4 +1,4 @@
-import model.ActionType.TACTICAL_NUCLEAR_STRIKE
+import model.ActionType.{SCALE, TACTICAL_NUCLEAR_STRIKE}
 import model.{ActionType, Move, VehicleType}
 
 sealed trait Action {
@@ -39,5 +39,14 @@ case class NuclearStrike(x: Double, y: Double, vehicleId: Long) extends Action {
     move.setX(x)
     move.setY(y)
     move.setVehicleId(vehicleId)
+  }
+}
+
+case class Scale(x: Double, y: Double, factor: Double) extends Action {
+  override def action(move: Move): Unit = {
+    move.setAction(SCALE)
+    move.setX(x)
+    move.setY(y)
+    move.setFactor(factor)
   }
 }
