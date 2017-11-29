@@ -150,49 +150,10 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
   private def selectAll(vehicleType: VehicleType) =
     Select(0, 0, world.getWidth, world.getHeight, vehicleType)
 
-  private def selectOneUnit(unit: Vehicle): Action =
-    Select(unit.getX - 3, unit.getY - 3, unit.getX + 3, unit.getY + 3, unit.getType)
-
-  import MyStrategy.Ownership._
-
-  private def streamVehicles(ownership: Ownership, vehicleType: VehicleType = null): Seq[Vehicle] = {
-    val vehicles = vehicleById.values.filter { v =>
-      ownership match {
-        case ALLY =>
-          v.getPlayerId == me.getId
-        case ENEMY =>
-          v.getPlayerId != me.getId
-        case _ => true
-      }
-    }.toList
-
-    if (vehicleType != null) vehicles.filter(_.getType == vehicleType)
-    else vehicles
-  }
-
   private def myUnits = vehicleById.values.filter { v => v.getPlayerId == me.getId }
 
   private def my(vType: VehicleType) =
     myUnits.filter(_.getType == vType)
 
   private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
-}
-
-object MyStrategy {
-
-  /**
-    * Список целей для каждого типа техники, упорядоченных по убыванию урона по ним.
-    */
-  private val preferredTargetTypesByVehicleType = Map[VehicleType, List[VehicleType]](
-    VehicleType.FIGHTER -> List(VehicleType.HELICOPTER, VehicleType.FIGHTER),
-    VehicleType.HELICOPTER -> List(VehicleType.TANK, VehicleType.HELICOPTER, VehicleType.IFV, VehicleType.FIGHTER, VehicleType.ARRV),
-    VehicleType.IFV -> List(VehicleType.HELICOPTER, VehicleType.IFV, VehicleType.FIGHTER, VehicleType.TANK, VehicleType.ARRV),
-    VehicleType.TANK -> List(VehicleType.IFV, VehicleType.TANK, VehicleType.FIGHTER, VehicleType.HELICOPTER, VehicleType.ARRV)
-  )
-
-  object Ownership extends Enumeration {
-    type Ownership = Value
-    val ANY, ALLY, ENEMY = Value
-  }
-
 }
