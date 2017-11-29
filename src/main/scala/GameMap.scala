@@ -10,4 +10,8 @@ object GameMap {
 
   def vehicleToSquare(v: Vehicle): (Int, Int) =
     pointToSquare(v.getX, v.getY)
+
+  def squareCenter(square: (Int, Int)): (Double, Double) =
+    (square._1 * SQUARE_SIZE + SQUARE_SIZE / 2,
+      square._2 * SQUARE_SIZE + SQUARE_SIZE / 2)
 }

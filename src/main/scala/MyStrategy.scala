@@ -113,6 +113,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         .sortBy(_._2.size)
         .reverse
         .map(_._1)
+        .map(GameMap.squareCenter)
 
       val spotters = myUnits
       val targetOption = (for {
