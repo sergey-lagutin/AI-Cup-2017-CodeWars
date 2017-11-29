@@ -7,7 +7,7 @@ import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType
 import scala.collection.convert.ImplicitConversionsToScala._
 import scala.language.implicitConversions
 
-final class MyStrategy extends Strategy {
+final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   final private val vehicleById = new util.HashMap[Long, Vehicle]
   final private val updateTickByVehicleId = new util.HashMap[Long, Integer]
@@ -16,8 +16,8 @@ final class MyStrategy extends Strategy {
   private var terrainTypeByCellXY: Array[Array[TerrainType]] = _
   private var weatherTypeByCellXY: Array[Array[WeatherType]] = _
   private var me: Player = _
-  private var world: World = _
-  private var game: Game = _
+  var world: World = _
+  var game: Game = _
   private var move: Move = _
 
   /**
@@ -105,30 +105,25 @@ final class MyStrategy extends Strategy {
   private def makeMove(): Unit = {
     if (world.getTickIndex == 0) {
       initNetwork()
-    } else {
-      val myFighters = streamVehicles(MyStrategy.Ownership.ALLY, FIGHTER)
-      if (myFighters.nonEmpty) {
-        val centers = VehicleType.values()
-          .flatMap { v =>
-            val vehicles = streamVehicles(MyStrategy.Ownership.ENEMY, v)
-            val xOpt = vehicles.map(_.getX).average
-            val yOpt = vehicles.map(_.getY).average
-            xOpt.flatMap(x => yOpt.map(y => (x, y)))
-          }
+    } else if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0) {
+      val targets = opponentUnits
+        .map(GameMap.vehicleToSquare)
+        .groupBy(identity)
+        .toList
+        .sortBy(_._2.size)
+        .reverse
+        .map(_._1)
 
-        if (centers.isEmpty)
-          return
+      val spotters = myUnits
+      val targetOption = (for {
+        target <- targets
+        spotter <- spotters
+        if spotter.getDistanceTo(target._1, target._2) <= getActualVisionRange(spotter)
+      } yield (target, spotter)).headOption
 
-        val spotter = myFighters.minBy(f => centers.minBy(p => f.getDistanceTo(p._1, p._2)))
-        val target = centers.minBy(p => spotter.getDistanceTo(p._1, p._2))
-
-        val spotDistance = 80
-        if (spotter.getDistanceTo(target._1, target._2) > spotDistance) {
-          delayedMoves.add(selectOneUnit(spotter))
-          delayedMoves.add(GoTo(target._1 - spotter.getX, target._2 - spotter.getY))
-        }
-        else if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0)
-          delayedMoves.add(NuclearStrike(target._1, target._2, spotter.getId))
+      targetOption.forall {
+        case ((x, y), spotter) =>
+          delayedMoves.add(NuclearStrike(x, y, spotter.getId))
       }
     }
   }
@@ -180,7 +175,7 @@ final class MyStrategy extends Strategy {
   private def my(vType: VehicleType) =
     myUnits.filter(_.getType == vType)
 
-  private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId == me.getId }
+  private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
 }
 
 object MyStrategy {
