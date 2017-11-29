@@ -131,7 +131,7 @@ final class MyStrategyPrevious extends Strategy {
     if (world.getTickIndex % 180 == 0) { // ... для каждого типа техники ...
       for {
         vehicleType <- VehicleType.values
-        targetTypes = MyStrategy.preferredTargetTypesByVehicleType.getOrElse(vehicleType, Nil)
+        targetTypes = MyStrategyPrevious.preferredTargetTypesByVehicleType.getOrElse(vehicleType, Nil)
         // ... если этот тип может атаковать ...
         if targetTypes.nonEmpty
       } {
@@ -204,7 +204,7 @@ final class MyStrategyPrevious extends Strategy {
 
 }
 
-object MyStrategy {
+object MyStrategyPrevious {
 
   /**
     * Список целей для каждого типа техники, упорядоченных по убыванию урона по ним.
