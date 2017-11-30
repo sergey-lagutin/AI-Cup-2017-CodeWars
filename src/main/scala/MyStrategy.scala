@@ -102,6 +102,8 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def isMy(b: Building) = b.ownerPlayerId == world.getMyPlayer.getId
 
+  private def isOpponent(b: Building) = b.ownerPlayerId == world.getOpponentPlayer.getId
+
   /**
     * Достаём отложенное действие из очереди и выполняем его.
     *
@@ -132,7 +134,9 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     if (world.getTickIndex == 0) {
       initAirNetwork()
     } else if (!addNuke()) {
-      val emptyBuildings = buildings.values.filter(_.ownerPlayerId == -1)
+      val emptyBuildings = buildings.values
+        .filter(_.ownerPlayerId == -1)
+        .filterNot(b => captureGroups.exists(_.building == b))
       val freeCaptureGroups = captureGroups.filter(_.building == null).filter(_.isAlive)
       val possibleTasks: List[(CaptureGroup, Building)] =
         (for {
@@ -151,14 +155,30 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
           if (groups(g) || buildings(b)) (tasks, groups, buildings)
           else (CaptureTask(g, b) :: tasks, groups + g, buildings + b)
       }._1
+        .sortBy(_.group.groupNumber).reverse
 
-      tasks.foreach {
-        case CaptureTask(group, building) =>
-          delayedMoves.add(SelectGroup(group.groupNumber))
-          delayedMoves.add(GoTo(building.center - group.center))
-          group.building = building
-      }
+      tasks.foreach(addCaptureTask)
+
+      captureGroups
+        .filter(_.building == null)
+        .flatMap { group =>
+          buildings.values
+            .toList
+            .filter(b => captureGroups.count(_.building == b) < 2)
+            .sortBy(_.center.squaredDistanceTo(group.center))
+            .headOption
+            .flatMap { b =>
+              group.building = b
+              Some(CaptureTask(group, b))
+            }
+        }.foreach(addCaptureTask)
     }
+  }
+
+  private def addCaptureTask(task: CaptureTask): Unit = {
+    delayedMoves.add(SelectGroup(task.group.groupNumber))
+    delayedMoves.add(GoTo(task.building.center - task.group.center))
+    task.group.building = task.building
   }
 
   case class CaptureTask(group: CaptureGroup, building: Building)
@@ -231,7 +251,10 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
               Scale(minX, minY, 10.0))
               .foreach(delayedMoves.add)
         }
-      Seq(IFV, TANK, ARRV).foreach { t =>
+
+      case class AssignTask(leftTop: Point, rightBottom: Point, vehicleType: VehicleType)
+
+      val tasks = Seq(IFV, TANK, ARRV).flatMap { t =>
         val vehicles = my(t)
         val xs = vehicles.map(_.getX)
         val ys = vehicles.map(_.getY)
@@ -241,12 +264,18 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         val maxY = ys.max
         val centerX = (maxX + minX) / 2
         val centerY = (maxY + minY) / 2
-        assignGroup(Point(minX, minY), Point(centerX, centerY), t)
-        assignGroup(Point(centerX, minY), Point(maxX, centerY), t)
-        assignGroup(Point(minX, centerY), Point(centerX, maxY), t)
-        assignGroup(Point(centerX, centerY), Point(maxX, maxY), t)
+        List(
+          AssignTask(Point(minX, minY), Point(centerX, centerY), t),
+          AssignTask(Point(centerX, minY), Point(maxX, centerY), t),
+          AssignTask(Point(minX, centerY), Point(centerX, maxY), t),
+          AssignTask(Point(centerX, centerY), Point(maxX, maxY), t)
+        )
       }
-      captureGroups = captureGroups.sortBy(_.center.squaredDistanceTo(Point(0, 0)))(Ordering.Double.reverse)
+
+      tasks.sortBy(_.leftTop.squaredDistanceTo(Point(0, 0)))
+        .foreach { t =>
+          assignGroup(t.leftTop, t.rightBottom, t.vehicleType)
+        }
     }
 
   private var groupNumber = 0
@@ -265,7 +294,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     val number = nextGroupNumber
     delayedMoves.add(Assign(number))
     groups = number :: groups
-    captureGroups = (new CaptureGroup(number) :: captureGroups)
+    captureGroups = new CaptureGroup(number) :: captureGroups
     println("added group")
   }
 }
