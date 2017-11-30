@@ -5,6 +5,7 @@ import model.VehicleType._
 import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
 
 import scala.collection.convert.ImplicitConversionsToScala._
+import scala.collection.mutable
 import scala.language.implicitConversions
 
 final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
@@ -19,6 +20,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
   var world: World = _
   var game: Game = _
   private var move: Move = _
+  private val buildings = new mutable.HashMap[Long, Building]()
 
   /**
     * Основной метод стратегии, осуществляющий управление армией. Вызывается каждый тик.
@@ -74,6 +76,10 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         vehicleById.put(vehicleId, new Vehicle(vehicleById.get(vehicleId), vehicleUpdate))
         updateTickByVehicleId.put(vehicleId, world.getTickIndex)
       }
+    }
+
+    world.getFacilities.foreach { f =>
+      buildings.put(f.getId, Building(f))
     }
   }
 
@@ -131,21 +137,39 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
   }
 
   private def initAirNetwork(): Unit =
-    Seq(FIGHTER, HELICOPTER).zipWithIndex
-      .foreach {
-        case (t, i) =>
-          val vehicles = my(t)
-          val xs = vehicles.map(_.getX)
-          val ys = vehicles.map(_.getY)
-          val minX = xs.min
-          val minY = ys.min
-          val startX = minX + i * 5
-          val startY = minY + i * 5
-          Seq(selectAll(t),
-            GoTo(startX, startY),
-            Scale(minX, minY, 10.0))
-            .foreach(delayedMoves.add)
-      }
+    if (buildings.isEmpty) {
+      Seq(FIGHTER, HELICOPTER, TANK, IFV, ARRV).zipWithIndex
+        .foreach {
+          case (t, i) =>
+            val vehicles = my(t)
+            val xs = vehicles.map(_.getX)
+            val ys = vehicles.map(_.getY)
+            val minX = xs.min
+            val minY = ys.min
+            val startX = minX + i * 5
+            val startY = minY + i * 5
+            Seq(selectAll(t),
+              GoTo(startX, startY),
+              Scale(minX, minY, 10.0))
+              .foreach(delayedMoves.add)
+        }
+    } else {
+      Seq(FIGHTER, HELICOPTER).zipWithIndex
+        .foreach {
+          case (t, i) =>
+            val vehicles = my(t)
+            val xs = vehicles.map(_.getX)
+            val ys = vehicles.map(_.getY)
+            val minX = xs.min
+            val minY = ys.min
+            val startX = minX + i * 5
+            val startY = minY + i * 5
+            Seq(selectAll(t),
+              GoTo(startX, startY),
+              Scale(minX, minY, 10.0))
+              .foreach(delayedMoves.add)
+        }
+    }
 
   private def selectAll(vehicleType: VehicleType) =
     Select(0, 0, world.getWidth, world.getHeight, vehicleType)
