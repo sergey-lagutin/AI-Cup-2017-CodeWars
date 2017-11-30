@@ -16,11 +16,11 @@ case class Select(left: Double, top: Double, right: Double, bottom: Double, vehi
   }
 }
 
-case class GoTo(x: Double, y: Double) extends Action {
+case class GoTo(dx: Double, dy: Double) extends Action {
   override def action(move: Move): Unit = {
     move.setAction(ActionType.MOVE)
-    move.setX(x)
-    move.setY(y)
+    move.setX(dx)
+    move.setY(dy)
   }
 }
 

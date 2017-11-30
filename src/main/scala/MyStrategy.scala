@@ -88,6 +88,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       false
     }
     else {
+      println(s"[${world.getTickIndex}]: $delayedMove")
       delayedMove.action(move)
       true
     }
@@ -104,7 +105,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     */
   private def makeMove(): Unit = {
     if (world.getTickIndex == 0) {
-      initNetwork()
+      initAirNetwork()
     } else if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0) {
       val targets = opponentUnits
         .map(GameMap.vehicleToSquare)
@@ -129,9 +130,8 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     }
   }
 
-  private def initNetwork(): Unit = {
-    val types = Seq(FIGHTER, HELICOPTER, TANK, IFV, ARRV)
-    types.zipWithIndex
+  private def initAirNetwork(): Unit =
+    Seq(FIGHTER, HELICOPTER).zipWithIndex
       .foreach {
         case (t, i) =>
           val vehicles = my(t)
@@ -146,7 +146,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
             Scale(minX, minY, 10.0))
             .foreach(delayedMoves.add)
       }
-  }
 
   private def selectAll(vehicleType: VehicleType) =
     Select(0, 0, world.getWidth, world.getHeight, vehicleType)
