@@ -8,7 +8,9 @@ case class Building(
                      capturePoints: Double,
                      vehicleType: VehicleType,
                      productionProgress: Int
-                   )
+                   ) {
+  def center: Point = Point(leftTop.x + GameMap.SQUARE_SIZE, leftTop.y + GameMap.SQUARE_SIZE)
+}
 
 object Building {
   def apply(facility: Facility): Building = new Building(

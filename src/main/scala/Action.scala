@@ -16,6 +16,17 @@ case class Select(left: Double, top: Double, right: Double, bottom: Double, vehi
   }
 }
 
+case class SelectGroup(number: Int) extends Action {
+  override def action(move: Move): Unit = {
+    move.setAction(ActionType.CLEAR_AND_SELECT)
+    move.setGroup(number)
+  }
+}
+
+object GoTo {
+  def apply(v: Vect): GoTo = new GoTo(v.dx, v.dy)
+}
+
 case class GoTo(dx: Double, dy: Double) extends Action {
   override def action(move: Move): Unit = {
     move.setAction(ActionType.MOVE)

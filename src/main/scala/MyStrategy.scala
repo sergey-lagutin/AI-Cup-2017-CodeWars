@@ -83,15 +83,21 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     }
 
     captureGroups.foreach { group =>
+      Option(group.building).foreach { b =>
+        group.building = buildings(b.id)
+      }
       group.vehicles =
         vehicleById.values()
           .filter(_.getGroups.contains(group.groupNumber))
           .toList
     }
-    captureGroups = captureGroups.filter(_.isAlive)
     captureGroups
+      .filter(_.building != null)
       .filter(g => isMy(g.building))
-      .foreach(_.building = null)
+      .foreach { g =>
+        g.building = null
+        g.needToShrink = true
+      }
   }
 
   private def isMy(b: Building) = b.ownerPlayerId == world.getMyPlayer.getId
@@ -125,7 +131,40 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
   private def makeMove(): Unit = {
     if (world.getTickIndex == 0) {
       initAirNetwork()
-    } else if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0) {
+    } else if (!addNuke()) {
+      val emptyBuildings = buildings.values.filter(_.ownerPlayerId == -1)
+      val freeCaptureGroups = captureGroups.filter(_.building == null).filter(_.isAlive)
+      val possibleTasks: List[(CaptureGroup, Building)] =
+        (for {
+          b <- emptyBuildings
+          g <- freeCaptureGroups
+          v = g.vehicles.minBy(_.getSquaredDistanceTo(b.leftTop.x, b.leftTop.y))
+        } yield (g, b, v.getDistanceTo(b.leftTop.x, b.leftTop.y)))
+          .toList
+          .sortBy(_._3)
+          .map {
+            case (g, b, d) => (g, b)
+          }
+
+      val tasks = possibleTasks.foldLeft((List.empty[CaptureTask], Set.empty[CaptureGroup], Set.empty[Building])) {
+        case ((tasks, groups, buildings), (g, b)) =>
+          if (groups(g) || buildings(b)) (tasks, groups, buildings)
+          else (CaptureTask(g, b) :: tasks, groups + g, buildings + b)
+      }._1
+
+      tasks.foreach {
+        case CaptureTask(group, building) =>
+          delayedMoves.add(SelectGroup(group.groupNumber))
+          delayedMoves.add(GoTo(building.center - group.center))
+          group.building = building
+      }
+    }
+  }
+
+  case class CaptureTask(group: CaptureGroup, building: Building)
+
+  private def addNuke(): Boolean =
+    if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0) {
       val targets = opponentUnits
         .map(GameMap.vehicleToSquare)
         .groupBy(identity)
@@ -142,12 +181,12 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         if spotter.getDistanceTo(target._1, target._2) <= getActualVisionRange(spotter)
       } yield (target, spotter)).headOption
 
-      targetOption.forall {
+      targetOption.foreach {
         case ((x, y), spotter) =>
-          delayedMoves.add(NuclearStrike(x, y, spotter.getId))
+          delayedMoves.addFirst(NuclearStrike(x, y, spotter.getId))
       }
-    }
-  }
+      targetOption.isDefined
+    } else false
 
   private def selectAll(vehicleType: VehicleType) =
     Select(0, 0, world.getWidth, world.getHeight, vehicleType)
@@ -158,7 +197,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     myUnits.filter(_.getType == vType)
 
   private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
-
 
   private def initAirNetwork(): Unit =
     if (buildings.isEmpty) {
@@ -201,13 +239,14 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         val minY = ys.min
         val maxX = xs.max
         val maxY = ys.max
-        val centerX = (maxX - minX) / 2
-        val centerY = (maxY - minY) / 2
+        val centerX = (maxX + minX) / 2
+        val centerY = (maxY + minY) / 2
         assignGroup(Point(minX, minY), Point(centerX, centerY), t)
         assignGroup(Point(centerX, minY), Point(maxX, centerY), t)
         assignGroup(Point(minX, centerY), Point(centerX, maxY), t)
         assignGroup(Point(centerX, centerY), Point(maxX, maxY), t)
       }
+      captureGroups = captureGroups.sortBy(_.center.squaredDistanceTo(Point(0, 0)))(Ordering.Double.reverse)
     }
 
   private var groupNumber = 0
@@ -226,6 +265,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     val number = nextGroupNumber
     delayedMoves.add(Assign(number))
     groups = number :: groups
-    captureGroups = new CaptureGroup(number) :: captureGroups
+    captureGroups = (new CaptureGroup(number) :: captureGroups)
+    println("added group")
   }
 }
