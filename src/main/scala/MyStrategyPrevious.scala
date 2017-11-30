@@ -1,13 +1,13 @@
 import java.util
 import java.util.Random
 
-import model.VehicleType.FIGHTER
+import model.VehicleType._
 import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
 
 import scala.collection.convert.ImplicitConversionsToScala._
 import scala.language.implicitConversions
 
-final class MyStrategyPrevious extends Strategy {
+final class MyStrategyPrevious extends Strategy with WorldAware with TerrainAndWeather {
 
   final private val vehicleById = new util.HashMap[Long, Vehicle]
   final private val updateTickByVehicleId = new util.HashMap[Long, Integer]
@@ -16,8 +16,8 @@ final class MyStrategyPrevious extends Strategy {
   private var terrainTypeByCellXY: Array[Array[TerrainType]] = _
   private var weatherTypeByCellXY: Array[Array[WeatherType]] = _
   private var me: Player = _
-  private var world: World = _
-  private var game: Game = _
+  var world: World = _
+  var game: Game = _
   private var move: Move = _
 
   /**
@@ -103,122 +103,58 @@ final class MyStrategyPrevious extends Strategy {
     * Основная логика нашей стратегии.
     */
   private def makeMove(): Unit = {
-    val myFighters = streamVehicles(MyStrategyPrevious.Ownership.ALLY, FIGHTER)
-    if (myFighters.nonEmpty) {
-      val centers = VehicleType.values()
-        .flatMap { v =>
-          val vehicles = streamVehicles(MyStrategyPrevious.Ownership.ENEMY, v)
-          val xOpt = vehicles.map(_.getX).average
-          val yOpt = vehicles.map(_.getY).average
-          xOpt.flatMap(x => yOpt.map(y => (x, y)))
-        }
+    if (world.getTickIndex == 0) {
+      initNetwork()
+    } else if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0) {
+      val targets = opponentUnits
+        .map(GameMap.vehicleToSquare)
+        .groupBy(identity)
+        .toList
+        .sortBy(_._2.size)
+        .reverse
+        .map(_._1)
+        .map(GameMap.squareCenter)
 
-      if (centers.isEmpty)
-        return
+      val spotters = myUnits
+      val targetOption = (for {
+        target <- targets
+        spotter <- spotters
+        if spotter.getDistanceTo(target._1, target._2) <= getActualVisionRange(spotter)
+      } yield (target, spotter)).headOption
 
-      val spotter = myFighters.minBy(f => centers.minBy(p => f.getDistanceTo(p._1, p._2)))
-      val target = centers.minBy(p => spotter.getDistanceTo(p._1, p._2))
-
-      val spotDistance = 80
-      if (spotter.getDistanceTo(target._1, target._2) > spotDistance) {
-        delayedMoves.add(selectOneUnit(spotter))
-        delayedMoves.add(GoTo(target._1 - spotter.getX, target._2 - spotter.getY))
-      }
-      else if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0)
-        delayedMoves.add(NuclearStrike(target._1, target._2, spotter.getId))
-    }
-    // Каждые 180 тиков ...
-    if (world.getTickIndex % 180 == 0) { // ... для каждого типа техники ...
-      for {
-        vehicleType <- VehicleType.values
-        targetTypes = MyStrategyPrevious.preferredTargetTypesByVehicleType.getOrElse(vehicleType, Nil)
-        // ... если этот тип может атаковать ...
-        if targetTypes.nonEmpty
-      } {
-        // ... получаем центр формации ...
-        val xOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, vehicleType).map(_.getX).average
-        val yOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, vehicleType).map(_.getY).average
-        // ... получаем центр формации противника или центр мира ...
-        val targetX = targetTypes
-          .flatMap(targetType => streamVehicles(MyStrategyPrevious.Ownership.ENEMY, targetType).map(_.getX).average)
-          .headOption
-          .getOrElse(streamVehicles(MyStrategyPrevious.Ownership.ENEMY).map(_.getX).average.getOrElse(world.getWidth / 2.0D))
-        val targetY = targetTypes
-          .flatMap(targetType => streamVehicles(MyStrategyPrevious.Ownership.ENEMY, targetType).map(_.getY).average)
-          .headOption
-          .getOrElse(streamVehicles(MyStrategyPrevious.Ownership.ENEMY).map(_.getY).average.getOrElse(world.getHeight / 2.0D))
-        // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
-        (xOpt, yOpt) match {
-          case (Some(x), Some(y)) =>
-            delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight, vehicleType))
-            delayedMoves.add(GoTo(targetX - x, targetY - y))
-          case _ =>
-        }
-      }
-      // Также находим центр формации наших БРЭМ ...
-      val xOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, VehicleType.ARRV).map(_.getX).average
-      val yOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY, VehicleType.ARRV).map(_.getY).average
-      // .. и отправляем их в центр мира.
-      (xOpt, yOpt) match {
-        case (Some(x), Some(y)) =>
-          delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight, VehicleType.ARRV))
-          delayedMoves.add(GoTo(world.getWidth / 2.0D - x, world.getHeight / 2.0D - y))
-        case _ =>
-      }
-      return
-    }
-
-    // Если ни один наш юнит не мог двигаться в течение 60 тиков ...
-    if (streamVehicles(MyStrategyPrevious.Ownership.ALLY).forall(vehicle => world.getTickIndex - updateTickByVehicleId.get(vehicle.getId) > 60)) { // ... находим центр нашей формации ...
-      val xOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY).map(_.getX).average
-      val yOpt = streamVehicles(MyStrategyPrevious.Ownership.ALLY).map(_.getY).average
-      // ... и поворачиваем её на случайный угол.
-      (xOpt, yOpt) match {
-        case (Some(x), Some(y)) =>
-          delayedMoves.add(Select(0, 0, world.getWidth, world.getHeight))
-          delayedMoves.add(Rotate(x, y, if (random.nextBoolean) StrictMath.PI else -StrictMath.PI))
-        case _ =>
+      targetOption.forall {
+        case ((x, y), spotter) =>
+          delayedMoves.add(NuclearStrike(x, y, spotter.getId))
       }
     }
   }
 
-  private def selectOneUnit(unit: Vehicle): Action =
-    Select(unit.getX - 3, unit.getY - 3, unit.getX + 3, unit.getY + 3, unit.getType)
-
-  import MyStrategyPrevious.Ownership._
-
-  private def streamVehicles(ownership: Ownership, vehicleType: VehicleType = null): Seq[Vehicle] = {
-    val vehicles = vehicleById.values.filter { v =>
-      ownership match {
-        case ALLY =>
-          v.getPlayerId == me.getId
-        case ENEMY =>
-          v.getPlayerId != me.getId
-        case _ => true
+  private def initNetwork(): Unit = {
+    val types = Seq(FIGHTER, HELICOPTER, TANK, IFV, ARRV)
+    types.zipWithIndex
+      .foreach {
+        case (t, i) =>
+          val vehicles = my(t)
+          val xs = vehicles.map(_.getX)
+          val ys = vehicles.map(_.getY)
+          val minX = xs.min
+          val minY = ys.min
+          val startX = minX + i * 5
+          val startY = minY + i * 5
+          Seq(selectAll(t),
+            GoTo(startX, startY),
+            Scale(minX, minY, 10.0))
+            .foreach(delayedMoves.add)
       }
-    }.toList
-
-    if (vehicleType != null) vehicles.filter(_.getType == vehicleType)
-    else vehicles
   }
 
-}
+  private def selectAll(vehicleType: VehicleType) =
+    Select(0, 0, world.getWidth, world.getHeight, vehicleType)
 
-object MyStrategyPrevious {
+  private def myUnits = vehicleById.values.filter { v => v.getPlayerId == me.getId }
 
-  /**
-    * Список целей для каждого типа техники, упорядоченных по убыванию урона по ним.
-    */
-  private val preferredTargetTypesByVehicleType = Map[VehicleType, List[VehicleType]](
-    VehicleType.FIGHTER -> List(VehicleType.HELICOPTER, VehicleType.FIGHTER),
-    VehicleType.HELICOPTER -> List(VehicleType.TANK, VehicleType.HELICOPTER, VehicleType.IFV, VehicleType.FIGHTER, VehicleType.ARRV),
-    VehicleType.IFV -> List(VehicleType.HELICOPTER, VehicleType.IFV, VehicleType.FIGHTER, VehicleType.TANK, VehicleType.ARRV),
-    VehicleType.TANK -> List(VehicleType.IFV, VehicleType.TANK, VehicleType.FIGHTER, VehicleType.HELICOPTER, VehicleType.ARRV)
-  )
+  private def my(vType: VehicleType) =
+    myUnits.filter(_.getType == vType)
 
-  object Ownership extends Enumeration {
-    type Ownership = Value
-    val ANY, ALLY, ENEMY = Value
-  }
-
+  private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
 }
