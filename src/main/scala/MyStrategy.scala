@@ -136,6 +136,20 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     }
   }
 
+  private var groupNumber = 0
+
+  private def selectAll(vehicleType: VehicleType) =
+    Select(0, 0, world.getWidth, world.getHeight, vehicleType)
+
+  private def myUnits = vehicleById.values.filter { v => v.getPlayerId == me.getId }
+
+  private def my(vType: VehicleType) =
+    myUnits.filter(_.getType == vType)
+
+  private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
+
+  private var groups: List[Int] = Nil
+
   private def initAirNetwork(): Unit =
     if (buildings.isEmpty) {
       Seq(FIGHTER, HELICOPTER, TANK, IFV, ARRV).zipWithIndex
@@ -169,15 +183,32 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
               Scale(minX, minY, 10.0))
               .foreach(delayedMoves.add)
         }
+      Seq(IFV, TANK, ARRV).foreach { t =>
+        val vehicles = my(t)
+        val xs = vehicles.map(_.getX)
+        val ys = vehicles.map(_.getY)
+        val minX = xs.min
+        val minY = ys.min
+        val maxX = xs.max
+        val maxY = ys.max
+        val centerX = (maxX - minX) / 2
+        val centerY = (maxY - minY) / 2
+        assignGroup(Point(minX, minY), Point(centerX, centerY), t)
+        assignGroup(Point(centerX, minY), Point(maxX, centerY), t)
+        assignGroup(Point(minX, centerY), Point(centerX, maxY), t)
+        assignGroup(Point(centerX, centerY), Point(maxX, maxY), t)
+      }
     }
 
-  private def selectAll(vehicleType: VehicleType) =
-    Select(0, 0, world.getWidth, world.getHeight, vehicleType)
+  private def nextGroupNumber: Int = {
+    groupNumber += 1
+    groupNumber
+  }
 
-  private def myUnits = vehicleById.values.filter { v => v.getPlayerId == me.getId }
-
-  private def my(vType: VehicleType) =
-    myUnits.filter(_.getType == vType)
-
-  private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
+  private def assignGroup(leftTop: Point, rightBottom: Point, vehicleType: VehicleType): Unit = {
+    delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, vehicleType))
+    val number = nextGroupNumber
+    delayedMoves.add(Assign(number))
+    groups = number :: groups
+  }
 }
