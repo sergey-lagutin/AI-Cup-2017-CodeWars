@@ -81,7 +81,20 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     world.getFacilities.foreach { f =>
       buildings.put(f.getId, Building(f))
     }
+
+    captureGroups.foreach { group =>
+      group.vehicles =
+        vehicleById.values()
+          .filter(_.getGroups.contains(group.groupNumber))
+          .toList
+    }
+    captureGroups = captureGroups.filter(_.isAlive)
+    captureGroups
+      .filter(g => isMy(g.building))
+      .foreach(_.building = null)
   }
+
+  private def isMy(b: Building) = b.ownerPlayerId == world.getMyPlayer.getId
 
   /**
     * Достаём отложенное действие из очереди и выполняем его.
@@ -136,8 +149,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     }
   }
 
-  private var groupNumber = 0
-
   private def selectAll(vehicleType: VehicleType) =
     Select(0, 0, world.getWidth, world.getHeight, vehicleType)
 
@@ -148,7 +159,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
 
-  private var groups: List[Int] = Nil
 
   private def initAirNetwork(): Unit =
     if (buildings.isEmpty) {
@@ -200,6 +210,12 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       }
     }
 
+  private var groupNumber = 0
+
+  private var groups: List[Int] = Nil
+
+  private var captureGroups: List[CaptureGroup] = Nil
+
   private def nextGroupNumber: Int = {
     groupNumber += 1
     groupNumber
@@ -210,5 +226,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     val number = nextGroupNumber
     delayedMoves.add(Assign(number))
     groups = number :: groups
+    captureGroups = new CaptureGroup(number) :: captureGroups
   }
 }
