@@ -82,14 +82,17 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       buildings.put(f.getId, Building(f))
     }
 
+    groups.foreach { group =>
+      group.updateVehicles(
+        vehicleById.values()
+          .filter(_.getGroups.contains(group.groupNumber))
+          .toList
+      )
+    }
     captureGroups.foreach { group =>
       Option(group.building).foreach { b =>
         group.building = buildings(b.id)
       }
-      group.vehicles =
-        vehicleById.values()
-          .filter(_.getGroups.contains(group.groupNumber))
-          .toList
     }
     captureGroups
       .filter(_.building != null)
@@ -298,7 +301,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private var groupNumber = 0
 
-  private var groups: List[Int] = Nil
+  private var groups: List[VehicleGroup] = Nil
 
   private var captureGroups: List[CaptureGroup] = Nil
 
@@ -311,7 +314,8 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, vehicleType))
     val number = nextGroupNumber
     delayedMoves.add(Assign(number))
-    groups = number :: groups
-    captureGroups = new CaptureGroup(number) :: captureGroups
+    val group = new CaptureGroup(number)
+    groups = group :: groups
+    captureGroups = group :: captureGroups
   }
 }
