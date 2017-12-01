@@ -86,7 +86,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       group.updateVehicles(
         vehicleById.values()
           .filter(_.getGroups.contains(group.groupNumber))
-          .toList
+          .toList, world.getTickIndex
       )
     }
     captureGroups.foreach { group =>
@@ -99,7 +99,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       .filter(g => isMy(g.building))
       .foreach { g =>
         g.building = null
-        g.needToShrink = true
       }
   }
 
@@ -145,6 +144,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       if (buildings.nonEmpty) {
         setUpProduction()
         setUpAttackGroups()
+        shrinkGroups()
         captureBuildings()
         attackOpponent()
       }
@@ -217,6 +217,18 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         delayedMoves.add(GoTo(Point(nearestVehicle.getX, nearestVehicle.getY) - ourCenter))
       }
   }
+
+  private def shrinkGroups(): Unit =
+    groups
+      .filter(_.isAlive)
+      .filter(_.needToShrink)
+      .foreach { g =>
+        delayedMoves.add(SelectGroup(g.groupNumber))
+        delayedMoves.add(Scale(g.center, 10))
+        delayedMoves.add(Rotate(g.center, if (random.nextBoolean) math.Pi else -math.Pi))
+        delayedMoves.add(Scale(g.center, 0.1))
+        g.resetShrink()
+      }
 
   case class CaptureTask(group: CaptureGroup, building: Building)
 
@@ -346,7 +358,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
   }
 
   private def assignAttackGroup(leftTop: Point, rightBottom: Point): Unit = {
-    delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y))
+    delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, HELICOPTER))
     val number = nextGroupNumber
     delayedMoves.add(Assign(number))
     val group = new AttackGroup(number)

@@ -35,6 +35,10 @@ case class GoTo(dx: Double, dy: Double) extends Action {
   }
 }
 
+object Rotate {
+  def apply(p: Point, angle: Double): Rotate = new Rotate(p.x, p.y, angle)
+}
+
 case class Rotate(x: Double, y: Double, angle: Double) extends Action {
   override def action(move: Move): Unit = {
     move.setAction(ActionType.ROTATE)
@@ -51,6 +55,10 @@ case class NuclearStrike(x: Double, y: Double, vehicleId: Long) extends Action {
     move.setY(y)
     move.setVehicleId(vehicleId)
   }
+}
+
+object Scale {
+  def apply(p: Point, factor: Double): Scale = new Scale(p.x, p.y, factor)
 }
 
 case class Scale(x: Double, y: Double, factor: Double) extends Action {
