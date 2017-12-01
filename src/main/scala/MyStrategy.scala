@@ -2,7 +2,7 @@ import java.util
 import java.util.Random
 
 import model.VehicleType._
-import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
+import model.{FacilityType, Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
 
 import scala.collection.convert.ImplicitConversionsToScala._
 import scala.collection.mutable
@@ -136,9 +136,20 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     } else {
       addNuke()
       if (buildings.nonEmpty) {
+        setUpProduction()
         captureBuildings()
       }
     }
+  }
+
+  private def setUpProduction(): Unit = {
+    buildings.values
+      .filter(isMy)
+      .filter(_.`type` == FacilityType.VEHICLE_FACTORY)
+      .filter(_.vehicleType == null)
+      .foreach { b =>
+        delayedMoves.add(Production(b, HELICOPTER))
+      }
   }
 
   private def captureBuildings(): Unit = {

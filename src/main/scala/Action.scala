@@ -1,4 +1,4 @@
-import model.ActionType.{ASSIGN, SCALE, TACTICAL_NUCLEAR_STRIKE}
+import model.ActionType._
 import model.{ActionType, Move, VehicleType}
 
 sealed trait Action {
@@ -66,5 +66,13 @@ case class Assign(number: Int) extends Action {
   override def action(move: Move): Unit = {
     move.setAction(ASSIGN)
     move.setGroup(number)
+  }
+}
+
+case class Production(building: Building, vehicleType: VehicleType) extends Action {
+  override def action(move: Move): Unit = {
+    move.setAction(SETUP_VEHICLE_PRODUCTION)
+    move.setFacilityId(building.id)
+    move.setVehicleType(vehicleType)
   }
 }
