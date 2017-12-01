@@ -161,10 +161,13 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
   }
 
   private def captureBuildings(): Unit = {
+    val aliveGroups = captureGroups.filter(_.isAlive)
+
     val emptyBuildings = buildings.values
       .filter(_.ownerPlayerId == -1)
-      .filterNot(b => captureGroups.exists(_.building == b))
-    val freeCaptureGroups = captureGroups.filter(_.building == null).filter(_.isAlive)
+      .filterNot(b => aliveGroups.exists(_.building == b))
+
+    val freeCaptureGroups = aliveGroups.filter(_.building == null)
     val possibleTasks: List[(CaptureGroup, Building)] =
       (for {
         b <- emptyBuildings
@@ -186,12 +189,12 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
     tasks.foreach(addCaptureTask)
 
-    captureGroups
+    aliveGroups
       .filter(_.building == null)
       .flatMap { group =>
         buildings.values
           .toList
-          .filter(b => captureGroups.count(_.building == b) < 2)
+          .filter(b => aliveGroups.count(_.building == b) < 2)
           .sortBy(_.center.squaredDistanceTo(group.center))
           .headOption
           .flatMap { b =>
