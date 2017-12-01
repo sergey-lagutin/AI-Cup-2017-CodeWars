@@ -146,6 +146,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         setUpProduction()
         setUpAttackGroups()
         captureBuildings()
+        attackOpponent()
       }
     }
   }
@@ -204,6 +205,17 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     delayedMoves.add(SelectGroup(task.group.groupNumber))
     delayedMoves.add(GoTo(task.building.center - task.group.center))
     task.group.building = task.building
+  }
+
+  private def attackOpponent(): Unit = {
+    attackGroups
+      .filter(_.isAlive)
+      .foreach { g =>
+        val ourCenter = g.center
+        val nearestVehicle = opponentUnits.minBy(_.getDistanceTo(ourCenter.x, ourCenter.y))
+        delayedMoves.add(SelectGroup(g.groupNumber))
+        delayedMoves.add(GoTo(Point(nearestVehicle.getX, nearestVehicle.getY) - ourCenter))
+      }
   }
 
   case class CaptureTask(group: CaptureGroup, building: Building)
