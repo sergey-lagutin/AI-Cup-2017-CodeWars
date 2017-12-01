@@ -132,47 +132,54 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     */
   private def makeMove(): Unit = {
     if (world.getTickIndex == 0) {
-      initAirNetwork()
-    } else if (!addNuke()) {
-      val emptyBuildings = buildings.values
-        .filter(_.ownerPlayerId == -1)
-        .filterNot(b => captureGroups.exists(_.building == b))
-      val freeCaptureGroups = captureGroups.filter(_.building == null).filter(_.isAlive)
-      val possibleTasks: List[(CaptureGroup, Building)] =
-        (for {
-          b <- emptyBuildings
-          g <- freeCaptureGroups
-          v = g.vehicles.minBy(_.getSquaredDistanceTo(b.leftTop.x, b.leftTop.y))
-        } yield (g, b, v.getDistanceTo(b.leftTop.x, b.leftTop.y)))
-          .toList
-          .sortBy(_._3)
-          .map {
-            case (g, b, d) => (g, b)
-          }
-
-      val tasks = possibleTasks.foldLeft((List.empty[CaptureTask], Set.empty[CaptureGroup], Set.empty[Building])) {
-        case ((tasks, groups, buildings), (g, b)) =>
-          if (groups(g) || buildings(b)) (tasks, groups, buildings)
-          else (CaptureTask(g, b) :: tasks, groups + g, buildings + b)
-      }._1
-        .sortBy(_.group.groupNumber).reverse
-
-      tasks.foreach(addCaptureTask)
-
-      captureGroups
-        .filter(_.building == null)
-        .flatMap { group =>
-          buildings.values
-            .toList
-            .filter(b => captureGroups.count(_.building == b) < 2)
-            .sortBy(_.center.squaredDistanceTo(group.center))
-            .headOption
-            .flatMap { b =>
-              group.building = b
-              Some(CaptureTask(group, b))
-            }
-        }.foreach(addCaptureTask)
+      initMinefield()
+    } else {
+      addNuke()
+      if (buildings.nonEmpty) {
+        captureBuildings()
+      }
     }
+  }
+
+  private def captureBuildings(): Unit = {
+    val emptyBuildings = buildings.values
+      .filter(_.ownerPlayerId == -1)
+      .filterNot(b => captureGroups.exists(_.building == b))
+    val freeCaptureGroups = captureGroups.filter(_.building == null).filter(_.isAlive)
+    val possibleTasks: List[(CaptureGroup, Building)] =
+      (for {
+        b <- emptyBuildings
+        g <- freeCaptureGroups
+        v = g.vehicles.minBy(_.getSquaredDistanceTo(b.leftTop.x, b.leftTop.y))
+      } yield (g, b, v.getDistanceTo(b.leftTop.x, b.leftTop.y)))
+        .toList
+        .sortBy(_._3)
+        .map {
+          case (g, b, d) => (g, b)
+        }
+
+    val tasks = possibleTasks.foldLeft((List.empty[CaptureTask], Set.empty[CaptureGroup], Set.empty[Building])) {
+      case ((tasks, groups, buildings), (g, b)) =>
+        if (groups(g) || buildings(b)) (tasks, groups, buildings)
+        else (CaptureTask(g, b) :: tasks, groups + g, buildings + b)
+    }._1
+      .sortBy(_.group.groupNumber).reverse
+
+    tasks.foreach(addCaptureTask)
+
+    captureGroups
+      .filter(_.building == null)
+      .flatMap { group =>
+        buildings.values
+          .toList
+          .filter(b => captureGroups.count(_.building == b) < 2)
+          .sortBy(_.center.squaredDistanceTo(group.center))
+          .headOption
+          .flatMap { b =>
+            group.building = b
+            Some(CaptureTask(group, b))
+          }
+      }.foreach(addCaptureTask)
   }
 
   private def addCaptureTask(task: CaptureTask): Unit = {
@@ -218,7 +225,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
 
-  private def initAirNetwork(): Unit =
+  private def initMinefield(): Unit =
     if (buildings.isEmpty) {
       Seq(FIGHTER, HELICOPTER, TANK, IFV, ARRV).zipWithIndex
         .foreach {
@@ -295,6 +302,5 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     delayedMoves.add(Assign(number))
     groups = number :: groups
     captureGroups = new CaptureGroup(number) :: captureGroups
-    println("added group")
   }
 }
