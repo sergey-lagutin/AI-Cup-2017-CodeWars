@@ -23,3 +23,5 @@ class CaptureGroup(val groupNumber: Int) extends VehicleGroup {
   var building: Building = _
   var needToShrink: Boolean = false
 }
+
+class AttackGroup(val groupNumber: Int) extends VehicleGroup

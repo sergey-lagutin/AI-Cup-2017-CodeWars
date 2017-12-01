@@ -1,4 +1,4 @@
-import model.{Facility, FacilityType, VehicleType}
+import model.{Facility, FacilityType, Vehicle, VehicleType}
 
 case class Building(
                      id: Long,
@@ -9,7 +9,21 @@ case class Building(
                      vehicleType: VehicleType,
                      productionProgress: Int
                    ) {
-  def center: Point = Point(leftTop.x + GameMap.SQUARE_SIZE, leftTop.y + GameMap.SQUARE_SIZE)
+
+  lazy val center: Point = Point(leftTop.x + GameMap.SQUARE_SIZE, leftTop.y + GameMap.SQUARE_SIZE)
+  lazy val rightBottom: Point = Point(leftTop.x + 2 * GameMap.SQUARE_SIZE, leftTop.y + 2 * GameMap.SQUARE_SIZE)
+
+  def isFactory: Boolean = `type` == FacilityType.VEHICLE_FACTORY
+
+  def vehicleOnFactory(myUnits: Iterable[Vehicle]): List[Vehicle] =
+    myUnits.toList
+      .filter(u =>
+        inRange(u.getX, leftTop.x, rightBottom.x) &&
+          inRange(u.getY, leftTop.y, rightBottom.y)
+      )
+
+  private def inRange(x: Double, x0: Double, x1: Double): Boolean =
+    x0 <= x && x <= x1
 }
 
 object Building {

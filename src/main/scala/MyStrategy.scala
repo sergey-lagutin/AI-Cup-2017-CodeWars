@@ -2,7 +2,7 @@ import java.util
 import java.util.Random
 
 import model.VehicleType._
-import model.{FacilityType, Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
+import model.{Game, Move, Player, TerrainType, Vehicle, VehicleType, WeatherType, World}
 
 import scala.collection.convert.ImplicitConversionsToScala._
 import scala.collection.mutable
@@ -105,6 +105,8 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def isMy(b: Building) = b.ownerPlayerId == world.getMyPlayer.getId
 
+  private var attackGroups: List[AttackGroup] = Nil
+
   private def isOpponent(b: Building) = b.ownerPlayerId == world.getOpponentPlayer.getId
 
   /**
@@ -130,6 +132,8 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       else None
   }
 
+  private def isMyFactory(b: Building) = isMy(b) && b.isFactory
+
   /**
     * Основная логика нашей стратегии.
     */
@@ -140,6 +144,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       addNuke()
       if (buildings.nonEmpty) {
         setUpProduction()
+        setUpAttackGroups()
         captureBuildings()
       }
     }
@@ -147,8 +152,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def setUpProduction(): Unit = {
     buildings.values
-      .filter(isMy)
-      .filter(_.`type` == FacilityType.VEHICLE_FACTORY)
+      .filter(isMyFactory)
       .filter(_.vehicleType == null)
       .foreach { b =>
         delayedMoves.add(Production(b, HELICOPTER))
@@ -239,6 +243,22 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
 
+  private def setUpAttackGroups(): Unit = {
+    lazy val myUnitsWithoutGroup = myUnits
+      .filter(_.getGroups.isEmpty)
+
+    buildings.values
+      .filter(isMyFactory)
+      .filter(_.vehicleOnFactory(myUnits).size >= 20)
+      .foreach { b => assignAttackGroup(b.leftTop, b.rightBottom) }
+  }
+
+  private var groupNumber = 0
+
+  private var groups: List[VehicleGroup] = Nil
+
+  private var captureGroups: List[CaptureGroup] = Nil
+
   private def initMinefield(): Unit =
     if (buildings.isEmpty) {
       Seq(FIGHTER, HELICOPTER, TANK, IFV, ARRV).zipWithIndex
@@ -295,27 +315,30 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
       tasks.sortBy(_.leftTop.squaredDistanceTo(Point(0, 0)))
         .foreach { t =>
-          assignGroup(t.leftTop, t.rightBottom, t.vehicleType)
+          assignCaptureGroup(t.leftTop, t.rightBottom, t.vehicleType)
         }
     }
-
-  private var groupNumber = 0
-
-  private var groups: List[VehicleGroup] = Nil
-
-  private var captureGroups: List[CaptureGroup] = Nil
 
   private def nextGroupNumber: Int = {
     groupNumber += 1
     groupNumber
   }
 
-  private def assignGroup(leftTop: Point, rightBottom: Point, vehicleType: VehicleType): Unit = {
+  private def assignCaptureGroup(leftTop: Point, rightBottom: Point, vehicleType: VehicleType): Unit = {
     delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, vehicleType))
     val number = nextGroupNumber
     delayedMoves.add(Assign(number))
     val group = new CaptureGroup(number)
     groups = group :: groups
     captureGroups = group :: captureGroups
+  }
+
+  private def assignAttackGroup(leftTop: Point, rightBottom: Point): Unit = {
+    delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y))
+    val number = nextGroupNumber
+    delayedMoves.add(Assign(number))
+    val group = new AttackGroup(number)
+    groups = group :: groups
+    attackGroups = group :: attackGroups
   }
 }
