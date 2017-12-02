@@ -285,39 +285,30 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private var captureGroups: List[CaptureGroup] = Nil
 
+  private def fill(types: VehicleType*): Unit =
+    types.sortBy(my(_).map(_.getDistanceTo(0, 0)).min).reverse
+      .zipWithIndex
+      .foreach {
+        case (t, i) =>
+          val vehicles = my(t)
+          val xs = vehicles.map(_.getX)
+          val ys = vehicles.map(_.getY)
+          val minX = xs.min
+          val minY = ys.min
+          val startX = minX + i * 5
+          val startY = minY + i * 5
+          Seq(selectAll(t),
+            GoTo(startX, startY),
+            Scale(minX, minY, 10.0))
+            .foreach(delayedMoves.add)
+      }
+
   private def initMinefield(): Unit =
     if (buildings.isEmpty) {
-      Seq(FIGHTER, HELICOPTER, TANK, IFV, ARRV).zipWithIndex
-        .foreach {
-          case (t, i) =>
-            val vehicles = my(t)
-            val xs = vehicles.map(_.getX)
-            val ys = vehicles.map(_.getY)
-            val minX = xs.min
-            val minY = ys.min
-            val startX = minX + i * 5
-            val startY = minY + i * 5
-            Seq(selectAll(t),
-              GoTo(startX, startY),
-              Scale(minX, minY, 10.0))
-              .foreach(delayedMoves.add)
-        }
+      fill(FIGHTER, HELICOPTER)
+      fill(TANK, IFV, ARRV)
     } else {
-      Seq(FIGHTER, HELICOPTER).zipWithIndex
-        .foreach {
-          case (t, i) =>
-            val vehicles = my(t)
-            val xs = vehicles.map(_.getX)
-            val ys = vehicles.map(_.getY)
-            val minX = xs.min
-            val minY = ys.min
-            val startX = minX + i * 5
-            val startY = minY + i * 5
-            Seq(selectAll(t),
-              GoTo(startX, startY),
-              Scale(minX, minY, 10.0))
-              .foreach(delayedMoves.add)
-        }
+      fill(FIGHTER, HELICOPTER)
 
       case class AssignTask(leftTop: Point, rightBottom: Point, vehicleType: VehicleType)
 
