@@ -8,7 +8,6 @@ import java.io.IOException;
 public final class Runner {
     private static final String HOST = "127.0.0.1";
     private final RemoteProcessClient remoteProcessClient;
-    private final String token = "0000000000000000";
     private final Strategy strategy;
 
     public Runner(Strategy strategy, int port) throws IOException {
@@ -19,7 +18,7 @@ public final class Runner {
     @SuppressWarnings("WeakerAccess")
     void run() throws IOException {
         try {
-            remoteProcessClient.writeTokenMessage(token);
+            remoteProcessClient.writeTokenMessage("0000000000000000");
             remoteProcessClient.writeProtocolVersionMessage();
             remoteProcessClient.readTeamSizeMessage();
             Game game = remoteProcessClient.readGameContextMessage();

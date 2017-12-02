@@ -43,7 +43,7 @@ trait VehicleGroup {
 
   def resetShrink(): Unit = toShrink = false
 
-  protected def shrinkTimeout = SHRINK_DELAY
+  protected def shrinkTimeout: Int = SHRINK_DELAY
 }
 
 class CaptureGroup(val groupNumber: Int) extends VehicleGroup {

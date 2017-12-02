@@ -24,7 +24,7 @@ case class SelectGroup(number: Int) extends Action {
 }
 
 object GoTo {
-  def apply(v: Vect): GoTo = new GoTo(v.dx, v.dy)
+  def apply(v: Dir): GoTo = new GoTo(v.dx, v.dy)
 }
 
 case class GoTo(dx: Double, dy: Double) extends Action {

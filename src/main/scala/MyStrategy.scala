@@ -106,8 +106,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private var attackGroups: List[AttackGroup] = Nil
 
-  private def isOpponent(b: Building) = b.ownerPlayerId == world.getOpponentPlayer.getId
-
   /**
     * Достаём отложенное действие из очереди и выполняем его.
     *
@@ -177,7 +175,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         .toList
         .sortBy(_._3)
         .map {
-          case (g, b, d) => (g, b)
+          case (g, b, _) => (g, b)
         }
 
     val tasks = possibleTasks.foldLeft((List.empty[CaptureTask], Set.empty[CaptureGroup], Set.empty[Building])) {
@@ -270,15 +268,11 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
 
-  private def setUpAttackGroups(): Unit = {
-    lazy val myUnitsWithoutGroup = myUnits
-      .filter(_.getGroups.isEmpty)
-
+  private def setUpAttackGroups(): Unit =
     buildings.values
       .filter(isMyFactory)
       .filter(_.vehicleOnFactory(myUnits).size >= 20)
       .foreach { b => assignAttackGroup(b.leftTop, b.rightBottom) }
-  }
 
   private var groupNumber = 0
 
