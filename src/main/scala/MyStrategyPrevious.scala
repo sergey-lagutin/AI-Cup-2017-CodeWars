@@ -126,6 +126,8 @@ final class MyStrategyPrevious extends Strategy with WorldAware with TerrainAndW
         case ((x, y), spotter) =>
           delayedMoves.add(NuclearStrike(x, y, spotter.getId))
       }
+    } else {
+      moveTroops()
     }
   }
 
@@ -147,6 +149,15 @@ final class MyStrategyPrevious extends Strategy with WorldAware with TerrainAndW
             .foreach(delayedMoves.add)
       }
   }
+
+  private var nextMoveTroopsTick = 2000
+
+  private def moveTroops(): Unit =
+    if (world.getTickIndex > nextMoveTroopsTick) {
+      Seq(selectAll(null), GoTo(Dir(10, 10)))
+        .foreach(delayedMoves.add)
+      nextMoveTroopsTick += 1000
+    }
 
   private def selectAll(vehicleType: VehicleType) =
     Select(0, 0, world.getWidth, world.getHeight, vehicleType)

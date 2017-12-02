@@ -148,9 +148,20 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         shrinkGroups()
         captureBuildings()
         attackOpponent()
+      } else {
+        moveTroops()
       }
     }
   }
+
+  private var nextMoveTroopsTick = 2000
+
+  private def moveTroops(): Unit =
+    if (world.getTickIndex > nextMoveTroopsTick) {
+      Seq(selectAll(null), GoTo(Dir(10, 10)))
+        .foreach(delayedMoves.add)
+      nextMoveTroopsTick += 1000
+    }
 
   private def setUpProduction(): Unit = {
     buildings.values
