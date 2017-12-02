@@ -94,13 +94,15 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         group.building = buildings(b.id)
       }
     }
+  }
+
+  private def resetBuildings(): Unit =
     captureGroups
       .filter(_.building != null)
       .filter(g => isMy(g.building))
       .foreach { g =>
         g.building = null
       }
-  }
 
   private def isMy(b: Building) = b.ownerPlayerId == world.getMyPlayer.getId
 
@@ -140,6 +142,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     } else {
       addNuke()
       if (buildings.nonEmpty) {
+        resetBuildings()
         setUpProduction()
         setUpAttackGroups()
         shrinkGroups()
