@@ -271,11 +271,13 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def opponentUnits = vehicleById.values.filter { v => v.getPlayerId != me.getId }
 
-  private def setUpAttackGroups(): Unit =
+  private def setUpAttackGroups(): Unit = {
+    val withoutGroups = myUnits.filter(_.getGroups.isEmpty)
     buildings.values
       .filter(isMyFactory)
-      .filter(_.vehicleOnFactory(myUnits).size >= 20)
+      .filter(_.vehicleOnFactory(withoutGroups).size >= 20)
       .foreach { b => assignAttackGroup(b.leftTop, b.rightBottom) }
+  }
 
   private var groupNumber = 0
 
