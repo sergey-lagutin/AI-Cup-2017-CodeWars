@@ -208,6 +208,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         buildings.values
           .toList
           .filter(b => aliveGroups.count(_.building == b) < 2)
+          .filterNot(b => aliveGroups.exists(g => g.building == b && group.vehicleType == g.vehicleType))
           .sortBy(_.center.squaredDistanceTo(group.center))
           .headOption
           .flatMap { b =>
