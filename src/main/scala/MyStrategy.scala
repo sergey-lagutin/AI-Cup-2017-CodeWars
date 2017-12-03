@@ -296,7 +296,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     buildings.values
       .filter(isMyFactory)
       .filter(_.vehicleOnFactory(withoutGroups).size >= 20)
-      .foreach { b => assignAttackGroup(b.leftTop, b.rightBottom) }
+      .foreach(assignAttackGroup)
   }
 
   private var groupNumber = 0
@@ -363,8 +363,10 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   case class CaptureTask(group: CaptureGroup, building: Building, target: Point)
 
-  private def assignAttackGroup(leftTop: Point, rightBottom: Point): Unit = {
+  private def assignAttackGroup(building: Building): Unit = {
+    val (leftTop, rightBottom) = building.aroundBox
     delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, HELICOPTER))
+    delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, FIGHTER, add = true))
     val number = nextGroupNumber
     delayedMoves.add(Assign(number))
     val group = new AttackGroup(number)

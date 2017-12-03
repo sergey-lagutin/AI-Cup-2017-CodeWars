@@ -15,6 +15,20 @@ case class Building(
   val firstCapturePosition: Point = Point(leftTop.x + GameMap.SQUARE_SIZE * 1.5, leftTop.y + GameMap.SQUARE_SIZE * 1.5)
   val secondCapturePosition: Point = Point(leftTop.x + GameMap.SQUARE_SIZE * 0.5, leftTop.y + GameMap.SQUARE_SIZE * 0.5)
 
+
+  val aroundBox: (Point, Point) = {
+    def nonNegative(d: Double): Double =
+      if (d >= 0) d else 0
+
+    def nonOut(d: Double): Double =
+      if (d <= GameMap.MAP_SIZE) d else GameMap.MAP_SIZE
+
+    (Point(nonNegative(leftTop.x - GameMap.SQUARE_SIZE / 2),
+      nonNegative(leftTop.y - GameMap.SQUARE_SIZE / 2)),
+      Point(nonOut(rightBottom.x - GameMap.SQUARE_SIZE / 2),
+        nonOut(rightBottom.y - GameMap.SQUARE_SIZE / 2)))
+  }
+
   def isFactory: Boolean = `type` == FacilityType.VEHICLE_FACTORY
 
   def vehicleOnFactory(myUnits: Iterable[Vehicle]): List[Vehicle] =
