@@ -142,7 +142,6 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     } else {
       addNuke()
       if (buildings.nonEmpty) {
-        resetBuildings()
         setUpProduction()
         setUpAttackGroups()
         shrinkGroups()
