@@ -196,7 +196,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     val tasks = possibleTasks.foldLeft((List.empty[CaptureTask], Set.empty[CaptureGroup], Set.empty[Building])) {
       case ((tasks, groups, buildings), (g, b)) =>
         if (groups(g) || buildings(b)) (tasks, groups, buildings)
-        else (CaptureTask(g, b) :: tasks, groups + g, buildings + b)
+        else (CaptureTask(g, b, b.firstCapturePosition) :: tasks, groups + g, buildings + b)
     }._1
       .sortBy(_.group.groupNumber).reverse
 
@@ -212,14 +212,14 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
           .headOption
           .flatMap { b =>
             group.building = b
-            Some(CaptureTask(group, b))
+            Some(CaptureTask(group, b, b.secondCapturePosition))
           }
       }.foreach(addCaptureTask)
   }
 
   private def addCaptureTask(task: CaptureTask): Unit = {
     delayedMoves.add(SelectGroup(task.group.groupNumber))
-    delayedMoves.add(GoTo(task.building.center - task.group.center))
+    delayedMoves.add(GoTo(task.target - task.group.center))
     task.group.building = task.building
   }
 
@@ -246,7 +246,14 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
         g.resetShrink()
       }
 
-  case class CaptureTask(group: CaptureGroup, building: Building)
+  private def assignCaptureGroup(leftTop: Point, rightBottom: Point, vehicleType: VehicleType): Unit = {
+    delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, vehicleType))
+    val number = nextGroupNumber
+    delayedMoves.add(Assign(number))
+    val group = new CaptureGroup(number, vehicleType)
+    groups = group :: groups
+    captureGroups = group :: captureGroups
+  }
 
   private def addNuke(): Boolean =
     if (world.getMyPlayer.getRemainingNuclearStrikeCooldownTicks == 0) {
@@ -353,14 +360,7 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
     groupNumber
   }
 
-  private def assignCaptureGroup(leftTop: Point, rightBottom: Point, vehicleType: VehicleType): Unit = {
-    delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, vehicleType))
-    val number = nextGroupNumber
-    delayedMoves.add(Assign(number))
-    val group = new CaptureGroup(number)
-    groups = group :: groups
-    captureGroups = group :: captureGroups
-  }
+  case class CaptureTask(group: CaptureGroup, building: Building, target: Point)
 
   private def assignAttackGroup(leftTop: Point, rightBottom: Point): Unit = {
     delayedMoves.add(Select(leftTop.x, leftTop.y, rightBottom.x, rightBottom.y, HELICOPTER))

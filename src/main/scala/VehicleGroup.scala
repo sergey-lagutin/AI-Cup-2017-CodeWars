@@ -1,4 +1,4 @@
-import model.Vehicle
+import model.{Vehicle, VehicleType}
 
 trait VehicleGroup {
   private val SHRINK_DELAY = 1000
@@ -46,7 +46,7 @@ trait VehicleGroup {
   protected def shrinkTimeout: Int = SHRINK_DELAY
 }
 
-class CaptureGroup(val groupNumber: Int) extends VehicleGroup {
+class CaptureGroup(val groupNumber: Int, val vehicleType: VehicleType) extends VehicleGroup {
   var building: Building = _
 
   override def resetShrink(): Unit = {

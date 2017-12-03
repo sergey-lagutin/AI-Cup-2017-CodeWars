@@ -12,6 +12,8 @@ case class Building(
 
   lazy val center: Point = Point(leftTop.x + GameMap.SQUARE_SIZE, leftTop.y + GameMap.SQUARE_SIZE)
   lazy val rightBottom: Point = Point(leftTop.x + 2 * GameMap.SQUARE_SIZE, leftTop.y + 2 * GameMap.SQUARE_SIZE)
+  val firstCapturePosition: Point = Point(leftTop.x + GameMap.SQUARE_SIZE * 1.5, leftTop.y + GameMap.SQUARE_SIZE * 1.5)
+  val secondCapturePosition: Point = Point(leftTop.x + GameMap.SQUARE_SIZE * 0.5, leftTop.y + GameMap.SQUARE_SIZE * 0.5)
 
   def isFactory: Boolean = `type` == FacilityType.VEHICLE_FACTORY
 
