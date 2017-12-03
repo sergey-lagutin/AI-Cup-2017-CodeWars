@@ -178,7 +178,9 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       .filter(_.ownerPlayerId == -1)
       .filterNot(b => aliveGroups.exists(_.building == b))
 
-    val freeCaptureGroups = aliveGroups.filter(_.building == null)
+    val freeCaptureGroups =
+      aliveGroups.filter(g => g.building == null || isMy(g.building))
+
     val possibleTasks: List[(CaptureGroup, Building)] =
       (for {
         b <- emptyBuildings
