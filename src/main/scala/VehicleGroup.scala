@@ -49,6 +49,8 @@ trait VehicleGroup {
 class CaptureGroup(val groupNumber: Int, val vehicleType: VehicleType) extends VehicleGroup {
   var building: Building = _
 
+  override protected def shrinkTimeout: Int = 500
+
   override def resetShrink(): Unit = {
     super.resetShrink()
     building = null

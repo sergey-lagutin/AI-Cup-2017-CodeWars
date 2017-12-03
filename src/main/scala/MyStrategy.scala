@@ -173,32 +173,32 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
 
   private def captureBuildings(): Unit = {
     val aliveGroups = captureGroups.filter(_.isAlive)
-
-    val emptyBuildings = buildings.values
-      .filter(_.ownerPlayerId == -1)
-      .filterNot(b => aliveGroups.exists(_.building == b))
-
-    val freeCaptureGroups =
+    val availableCaptureGroups =
       aliveGroups.filter(g => g.building == null || isMy(g.building))
 
-    val possibleTasks: List[(CaptureGroup, Building)] =
-      (for {
-        b <- emptyBuildings
-        g <- freeCaptureGroups
-        v = g.vehicles.minBy(_.getSquaredDistanceTo(b.leftTop.x, b.leftTop.y))
-      } yield (g, b, v.getDistanceTo(b.leftTop.x, b.leftTop.y)))
+    val emptyBuildings = {
+      val empties = buildings.values
+        .filter(_.ownerPlayerId == -1)
+        .filterNot(b => aliveGroups.exists(_.building == b))
+      val availableGroupCount = availableCaptureGroups.size
+      if (empties.size <= availableGroupCount) empties
+      else empties
         .toList
-        .sortBy(_._3)
-        .map {
-          case (g, b, _) => (g, b)
-        }
+        .sortBy(b => aliveGroups.map(_.center.squaredDistanceTo(b.firstCapturePosition)).min)
+        .take(availableGroupCount)
+    }
 
-    val tasks = possibleTasks.foldLeft((List.empty[CaptureTask], Set.empty[CaptureGroup], Set.empty[Building])) {
-      case ((tasks, groups, buildings), (g, b)) =>
-        if (groups(g) || buildings(b)) (tasks, groups, buildings)
-        else (CaptureTask(g, b, b.firstCapturePosition) :: tasks, groups + g, buildings + b)
-    }._1
-      .sortBy(_.group.groupNumber).reverse
+    val fromFarestToNearest = emptyBuildings
+      .toList
+      .sortBy(b => aliveGroups.map(_.center.squaredDistanceTo(b.firstCapturePosition)).min)
+      .reverse
+
+    val tasks = fromFarestToNearest.foldLeft((List.empty[CaptureTask], Set.empty[CaptureGroup])) {
+      case ((tasks, groups), building) =>
+        val group = availableCaptureGroups.filterNot(groups)
+          .minBy(_.center.squaredDistanceTo(building.firstCapturePosition))
+        (CaptureTask(group, building, building.firstCapturePosition) :: tasks, groups + group)
+    }._1.reverse
 
     tasks.foreach(addCaptureTask)
 
