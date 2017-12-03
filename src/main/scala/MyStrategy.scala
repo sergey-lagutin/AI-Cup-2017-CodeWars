@@ -281,8 +281,8 @@ final class MyStrategy extends Strategy with WorldAware with TerrainAndWeather {
       targetOption.isDefined
     } else false
 
-  private def selectAll(vehicleType: VehicleType) =
-    Select(0, 0, world.getWidth, world.getHeight, vehicleType)
+  private def selectAll(vehicleType: VehicleType, add: Boolean = false) =
+    Select(0, 0, world.getWidth, world.getHeight, vehicleType, add)
 
   private def myUnits = vehicleById.values.filter { v => v.getPlayerId == me.getId }
 

@@ -5,9 +5,10 @@ sealed trait Action {
   def action(move: Move): Unit
 }
 
-case class Select(left: Double, top: Double, right: Double, bottom: Double, vehicleType: VehicleType = null) extends Action {
+case class Select(left: Double, top: Double, right: Double, bottom: Double,
+                  vehicleType: VehicleType = null, add: Boolean = false) extends Action {
   override def action(move: Move): Unit = {
-    move.setAction(ActionType.CLEAR_AND_SELECT)
+    move.setAction(if (add) ADD_TO_SELECTION else ActionType.CLEAR_AND_SELECT)
     move.setLeft(left)
     move.setTop(top)
     move.setRight(right)
